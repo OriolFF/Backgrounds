@@ -49,6 +49,7 @@ fun MainScreen() {
                     route.contains("Home") -> NavDestination.Home
                     route.contains("Backgrounds") -> NavDestination.Backgrounds
                     route.contains("Shaders") -> NavDestination.Shaders
+                    route.contains("ShaderHelp") -> NavDestination.ShaderHelp
                     else -> NavDestination.Home
                 }
             } ?: NavDestination.Home
@@ -91,6 +92,7 @@ fun MainScreen() {
                                 is NavDestination.Home -> "Home"
                                 is NavDestination.Backgrounds -> "Backgrounds"
                                 is NavDestination.Shaders -> "Shader Editor"
+                                is NavDestination.ShaderHelp -> "AGSL Reference"
                             }
                         )
                     },

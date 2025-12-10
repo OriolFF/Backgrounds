@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import com.uriolus.core.navigation.NavDestination
 import com.uriolus.feature.backgrounds.BackgroundsScreen
 import com.uriolus.feature.shaders.ShadersScreen
+import com.uriolus.feature.shaders.ShaderHelpScreen
 
 /**
  * Navigation host for the app
@@ -39,7 +40,15 @@ fun AppNavHost(
         }
         
         composable<NavDestination.Shaders> {
-            ShadersScreen()
+            ShadersScreen(
+                onNavigateToHelp = { navController.navigate(NavDestination.ShaderHelp) }
+            )
+        }
+        
+        composable<NavDestination.ShaderHelp> {
+            ShaderHelpScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
         }
     }
 }

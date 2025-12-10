@@ -16,4 +16,7 @@ sealed interface NavDestination {
     
     @Serializable
     data object Shaders : NavDestination
+    
+    @Serializable
+    data object ShaderHelp : NavDestination
 }

@@ -31,7 +31,8 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShadersScreen(
-    viewModel: ShadersViewModel = koinViewModel()
+    viewModel: ShadersViewModel = koinViewModel(),
+    onNavigateToHelp: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     var showError by remember { mutableStateOf(false) }
@@ -86,6 +87,9 @@ fun ShadersScreen(
                     TopAppBar(
                         title = { Text("Shader Editor", style = MaterialTheme.typography.titleMedium) },
                         actions = {
+                            IconButton(onClick = onNavigateToHelp) {
+                                Icon(Icons.Default.Info, "Help", tint = Color.White)
+                            }
                             IconButton(onClick = { viewModel.handleIntent(ShadersIntent.TogglePresets) }) {
                                 Icon(Icons.Default.List, "Presets", tint = Color.White)
                             }
