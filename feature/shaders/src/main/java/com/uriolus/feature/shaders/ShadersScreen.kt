@@ -22,7 +22,19 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -41,6 +53,20 @@ fun ShadersScreen(
     val state by viewModel.state.collectAsState()
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    
+    // Detect keyboard visibility
+    val imeInsets = WindowInsets.ime
+    val density = LocalDensity.current
+    val isKeyboardVisible by remember {
+        derivedStateOf {
+            imeInsets.getBottom(density) > 0
+        }
+    }
+    
+    // Log keyboard state changes for debugging
+    LaunchedEffect(isKeyboardVisible) {
+        android.util.Log.d("ShadersScreen", "Keyboard visible: $isKeyboardVisible, IME bottom: ${imeInsets.getBottom(density)}")
+    }
     
     // Time animation
     var time by remember { mutableStateOf(0f) }
@@ -77,7 +103,16 @@ fun ShadersScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (state.isEditorExpanded) 0.3f else 0.6f)
+                    .then(
+                        if (isKeyboardVisible) {
+                            // Fixed compact height when keyboard visible
+                            Modifier.height(180.dp)
+                        } else if (state.isEditorExpanded) {
+                            Modifier.weight(0.3f)
+                        } else {
+                            Modifier.weight(0.6f)
+                        }
+                    )
             ) {
                 ShaderPreview(
                     shaderCode = state.shaderCode,
@@ -87,8 +122,8 @@ fun ShadersScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 
-                // Top bar overlay
-                if (state.showControls) {
+                // Top bar overlay - hide when keyboard is visible to save space
+                if (state.showControls && !isKeyboardVisible) {
                     TopAppBar(
                         title = { Text("Shader Editor", style = MaterialTheme.typography.titleMedium) },
                         actions = {
@@ -132,36 +167,47 @@ fun ShadersScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(if (state.isEditorExpanded) 0.7f else 0.4f),
-                color = Color(0xFF1E1E1E),
+                    .then(
+                        if (isKeyboardVisible) {
+                            // Fill remaining space to eliminate black bar
+                            Modifier.weight(1f)
+                        } else if (state.isEditorExpanded) {
+                            Modifier.weight(0.7f)
+                        } else {
+                            Modifier.weight(0.4f)
+                        }
+                    ),
+                color = if (isKeyboardVisible) Color.Transparent else Color(0xFF1E1E1E),
                 tonalElevation = 8.dp
             ) {
-                Column {
-                    // Editor toolbar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF2D2D2D))
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "AGSL Shader Code",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(0.7f)
-                        )
-                        Row {
-                            IconButton(
-                                onClick = { viewModel.handleIntent(ShadersIntent.ToggleEditor) },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    if (state.isEditorExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                                    "Expand Editor",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                Column(modifier = if (isKeyboardVisible) Modifier.fillMaxSize() else Modifier) {
+                    // Editor toolbar - hide when keyboard is visible to maximize code space
+                    if (!isKeyboardVisible) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF2D2D2D))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "AGSL Shader Code",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(0.7f)
+                            )
+                            Row {
+                                IconButton(
+                                    onClick = { viewModel.handleIntent(ShadersIntent.ToggleEditor) },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        if (state.isEditorExpanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                                        "Expand Editor",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -170,10 +216,10 @@ fun ShadersScreen(
                     CodeEditor(
                         code = state.shaderCode,
                         onCodeChange = { viewModel.handleIntent(ShadersIntent.UpdateShaderCode(it)) },
+                        isKeyboardVisible = isKeyboardVisible,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .padding(8.dp)
+                            .fillMaxHeight()
                     )
                 }
             }
@@ -261,12 +307,28 @@ private fun ShaderPreview(
 private fun CodeEditor(
     code: String,
     onCodeChange: (String) -> Unit,
+    isKeyboardVisible: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    var textFieldValue by remember(code) { 
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Don't recreate TextFieldValue on every code change - this causes cursor reset!
+    var textFieldValue by remember { 
         mutableStateOf(TextFieldValue(code))
     }
+    
+    // Only update from external code changes (like preset selection)
+    LaunchedEffect(code) {
+        if (code != textFieldValue.text) {
+            textFieldValue = TextFieldValue(
+                text = code,
+                selection = textFieldValue.selection
+            )
+        }
+    }
+    
     var showAutocomplete by remember { mutableStateOf(false) }
     var autocompleteItems by remember { mutableStateOf<List<String>>(emptyList()) }
     var selectedSuggestionIndex by remember { mutableStateOf(0) }
@@ -351,9 +413,14 @@ private fun CodeEditor(
                 textFieldValue = newValue
                 onCodeChange(newValue.text)
                 updateAutocomplete()
+                // Bring cursor into view
+                coroutineScope.launch {
+                    bringIntoViewRequester.bringIntoView()
+                }
             },
             modifier = Modifier
                 .fillMaxSize()
+                .bringIntoViewRequester(bringIntoViewRequester)
                 .verticalScroll(scrollState)
                 .background(Color(0xFF1E1E1E))
                 .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -363,6 +430,7 @@ private fun CodeEditor(
                 color = Color(0xFFD4D4D4),
                 lineHeight = 18.sp
             ),
+            cursorBrush = SolidColor(Color.White),  // Make cursor visible
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
                 autoCorrect = false,

@@ -5,6 +5,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -60,6 +62,30 @@ fun DrawerContent(
             isSelected = currentDestination is NavDestination.Shaders,
             onClick = {
                 onNavigate(NavDestination.Shaders)
+                onCloseDrawer()
+            }
+        )
+        
+        DrawerMenuItem(
+            icon = Icons.Default.Code,
+            label = "Shader Editor 2",
+            isSelected = currentDestination is NavDestination.Editor2,
+            onClick = {
+                onNavigate(NavDestination.Editor2)
+                onCloseDrawer()
+            }
+        )
+        
+        Spacer(Modifier.height(8.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(8.dp))
+        
+        DrawerMenuItem(
+            icon = Icons.Default.Info,
+            label = "Attributions",
+            isSelected = currentDestination is NavDestination.Attributions,
+            onClick = {
+                onNavigate(NavDestination.Attributions)
                 onCloseDrawer()
             }
         )

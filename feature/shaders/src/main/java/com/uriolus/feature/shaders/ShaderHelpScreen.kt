@@ -49,6 +49,7 @@ fun ShaderHelpScreen(
             BuiltInFunctionsSection()
             ExamplesSection()
             TipsSection()
+            AttributionSection()
         }
     }
 }
@@ -480,6 +481,50 @@ private fun TipItem(title: String, description: String) {
             text = description,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.weight(0.6f)
+        )
+    }
+}
+
+@Composable
+private fun AttributionSection() {
+    HelpSection(title = "Acknowledgments") {
+        Text(
+            "This shader editor is based on the excellent ShaderEditor project by Markus Fisch:",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Spacer(Modifier.height(8.dp))
+        
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "ShaderEditor",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace
+                )
+                Text(
+                    text = "https://github.com/markusfisch/ShaderEditor",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+        }
+        
+        Spacer(Modifier.height(8.dp))
+        
+        Text(
+            "Thank you to all contributors of the ShaderEditor project!",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Medium
         )
     }
 }

@@ -218,6 +218,7 @@ This project is for educational and creative purposes.
 
 ## 🙏 Acknowledgments
 
+- **[ShaderEditor](https://github.com/markusfisch/ShaderEditor)** by Markus Fisch - The shader editor in this app is based on this excellent project. We are grateful for making it available as open source.
 - Android team for creating AGSL and RuntimeShader
 - Shadertoy community for shader inspiration
 - Open source community for amazing tools and libraries

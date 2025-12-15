@@ -26,4 +26,7 @@ include(":core:ui")
 include(":core:navigation")
 include(":feature:backgrounds")
 include(":feature:shaders")
+include(":feature:shaders:editor2")
+
+
  
