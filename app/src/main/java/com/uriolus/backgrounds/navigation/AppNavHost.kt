@@ -50,7 +50,8 @@ fun AppNavHost(
         
         composable<NavDestination.Editor2> {
             Editor2Screen(
-                onNavigateBack = { navController.navigateUp() }
+                onNavigateBack = { navController.navigateUp() },
+                onNavigateToHelp = { navController.navigate(NavDestination.ShaderHelp) }
             )
         }
         

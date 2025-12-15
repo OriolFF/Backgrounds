@@ -3,8 +3,16 @@ uniform float2 iMouse;
 uniform float iTime;
 
 half4 main(float2 fragCoord) {
+    // Calculate aspect ratio
+    float aspect = iResolution.x / iResolution.y;
+    
+    // Normalize coordinates
     float2 uv = fragCoord / iResolution;
     float2 mouseUV = iMouse / iResolution;
+    
+    // Adjust for aspect ratio to make circles circular
+    uv.x *= aspect;
+    mouseUV.x *= aspect;
     
     // Distance from touch point
     float dist = length(uv - mouseUV);

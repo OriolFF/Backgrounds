@@ -49,65 +49,67 @@ fun ShaderPreviewCanvas(
         }
     }
     
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .onSizeChanged { size ->
-                val newSize = size.toSize()
-                canvasSize = newSize
-                onSizeChanged(newSize)
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = { offset ->
-                        onTouchPositionChanged(offset)
-                    }
-                )
-            }
-            .drawBehind {
-                currentShader?.let { shader ->
-                    try {
-                        // Set uniforms - this reads elapsedTime/touchPosition state,
-                        // triggering recomposition when they change
-                        shader.setFloatUniform(
-                            "iResolution",
-                            size.width,
-                            size.height
-                        )
-                        
-                        shader.setFloatUniform("iTime", elapsedTime)
-                        
-                        // Set iMouse uniform if shader uses it
+    key(touchPosition, elapsedTime) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .onSizeChanged { size ->
+                    val newSize = size.toSize()
+                    canvasSize = newSize
+                    onSizeChanged(newSize)
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { offset ->
+                            onTouchPositionChanged(offset)
+                        }
+                    )
+                }
+                .drawBehind {
+                    currentShader?.let { shader ->
                         try {
+                            // Set uniforms - this reads elapsedTime/touchPosition state,
+                            // triggering recomposition when they change
                             shader.setFloatUniform(
-                                "iMouse",
-                                touchPosition.x,
-                                touchPosition.y
+                                "iResolution",
+                                size.width,
+                                size.height
+                            )
+                            
+                            shader.setFloatUniform("iTime", elapsedTime)
+                            
+                            // Set iMouse uniform if shader uses it
+                            try {
+                                shader.setFloatUniform(
+                                    "iMouse",
+                                    touchPosition.x,
+                                    touchPosition.y
+                                )
+                            } catch (e: Exception) {
+                                // Shader doesn't have iMouse uniform, ignore
+                            }
+                            
+                            drawRect(
+                                brush = ShaderBrush(shader),
+                                size = size
                             )
                         } catch (e: Exception) {
-                            // Shader doesn't have iMouse uniform, ignore
+                            // Draw black background on error
+                            drawRect(
+                                color = androidx.compose.ui.graphics.Color.Black,
+                                size = size
+                            )
                         }
-                        
-                        drawRect(
-                            brush = ShaderBrush(shader),
-                            size = size
-                        )
-                    } catch (e: Exception) {
-                        // Draw black background on error
+                    } ?: run {
+                        // Draw black background if shader not compiled
                         drawRect(
                             color = androidx.compose.ui.graphics.Color.Black,
                             size = size
                         )
                     }
-                } ?: run {
-                    // Draw black background if shader not compiled
-                    drawRect(
-                        color = androidx.compose.ui.graphics.Color.Black,
-                        size = size
-                    )
                 }
-            }
-    )
+        )
+    }
 }
 
 /**

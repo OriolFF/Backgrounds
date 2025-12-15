@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ fun TransparentTopBar(
     onNavigateBack: () -> Unit,
     onSaveClick: () -> Unit,
     onLoadClick: () -> Unit,
+    onHelpClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -40,6 +42,13 @@ fun TransparentTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onHelpClick) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Help",
+                    tint = Color.White
+                )
+            }
             IconButton(onClick = onLoadClick) {
                 Icon(
                     imageVector = Icons.Default.Folder,

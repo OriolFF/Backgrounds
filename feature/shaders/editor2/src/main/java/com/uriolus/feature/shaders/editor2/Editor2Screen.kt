@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun Editor2Screen(
     onNavigateBack: () -> Unit,
+    onNavigateToHelp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -92,7 +93,8 @@ fun Editor2Screen(
                     alpha = state.topBarAlpha,
                     onNavigateBack = onNavigateBack,
                     onSaveClick = { viewModel.handleIntent(Editor2Intent.ShowSaveDialog) },
-                    onLoadClick = { viewModel.handleIntent(Editor2Intent.ShowLoadDialog) }
+                    onLoadClick = { viewModel.handleIntent(Editor2Intent.ShowLoadDialog) },
+                    onHelpClick = onNavigateToHelp
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) },
