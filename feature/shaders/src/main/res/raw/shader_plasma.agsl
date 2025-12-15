@@ -1,0 +1,22 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    
+    float t = iTime * 0.5;
+    
+    float v1 = sin(uv.x * 10.0 + t);
+    float v2 = sin(uv.y * 10.0 + t);
+    float v3 = sin((uv.x + uv.y) * 10.0 + t);
+    float v4 = sin(sqrt(uv.x * uv.x + uv.y * uv.y) * 10.0 + t);
+    
+    float composite = (v1 + v2 + v3 + v4) * 0.25;
+    
+    float r = 0.5 + 0.5 * sin(composite * 3.14159);
+    float g = 0.5 + 0.5 * sin(composite * 3.14159 + 2.0);
+    float b = 0.5 + 0.5 * sin(composite * 3.14159 + 4.0);
+    
+    return half4(r, g, b, 1.0);
+}

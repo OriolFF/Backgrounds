@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -24,6 +25,9 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.koin.androidx.compose.koinViewModel
@@ -78,6 +82,7 @@ fun ShadersScreen(
                 ShaderPreview(
                     shaderCode = state.shaderCode,
                     time = state.elapsedTime,
+                    touchPosition = state.touchPosition,
                     onTouchUpdate = { x, y -> viewModel.updateTouchPosition(x, y) },
                     modifier = Modifier.fillMaxSize()
                 )
@@ -177,7 +182,7 @@ fun ShadersScreen(
         // Preset selector overlay
         if (state.showPresets) {
             PresetSelector(
-                presets = SHADER_PRESETS,
+                presets = viewModel.getPresets(),
                 selectedId = state.selectedPresetId,
                 onPresetSelected = { viewModel.handleIntent(ShadersIntent.SelectPreset(it)) },
                 onDismiss = { viewModel.handleIntent(ShadersIntent.TogglePresets) },
@@ -205,6 +210,7 @@ fun ShadersScreen(
 private fun ShaderPreview(
     shaderCode: String,
     time: Float,
+    touchPosition: Offset,
     onTouchUpdate: (Float, Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -233,6 +239,7 @@ private fun ShaderPreview(
                     try {
                         shader.setFloatUniform("iTime", time)
                         shader.setFloatUniform("iResolution", this.size.width, this.size.height)
+                        shader.setFloatUniform("iMouse", touchPosition.x, touchPosition.y)
                         
                         drawRect(
                             brush = ShaderBrush(shader),
@@ -257,36 +264,168 @@ private fun CodeEditor(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var textFieldValue by remember(code) { 
+        mutableStateOf(TextFieldValue(code))
+    }
+    var showAutocomplete by remember { mutableStateOf(false) }
+    var autocompleteItems by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedSuggestionIndex by remember { mutableStateOf(0) }
     
-    BasicTextField(
-        value = code,
-        onValueChange = onCodeChange,
-        modifier = modifier
-            .verticalScroll(scrollState)
-            .background(Color(0xFF1E1E1E))
-            .padding(8.dp),
-        textStyle = TextStyle(
-            fontFamily = FontFamily.Monospace,
-            fontSize = 13.sp,
-            color = Color(0xFFD4D4D4),
-            lineHeight = 18.sp
-        ),
-        decorationBox = { innerTextField ->
-            Box {
-                if (code.isEmpty()) {
-                    Text(
-                        "Write your AGSL shader code here...",
-                        style = TextStyle(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 13.sp,
-                            color = Color.Gray
+    // AGSL autocomplete keywords
+    val agslKeywords = remember {
+        listOf(
+            // Data types
+            "float", "vec2", "vec3", "vec4", "mat2", "mat3", "mat4", 
+            "half", "half2", "half3", "half4", "bool", "int",
+            // Qualifiers
+            "uniform", "in", "out", "const", "lowp", "mediump", "highp",
+            // Built-in functions - Math
+            "sin", "cos", "tan", "asin", "acos", "atan",
+            "abs", "sqrt", "pow", "exp", "exp2", "log", "log2",
+            "floor", "ceil", "fract", "mod", "min", "max", "clamp",
+            "mix", "step", "smoothstep", "sign",
+            // Vector functions
+            "dot", "cross", "length", "distance", "normalize",
+            "reflect", "refract", "faceforward",
+            // Common functions
+            "texture", "sample",
+            // Uniforms
+            "iTime", "iResolution", "iMouse",
+            // Control flow
+            "if", "else", "for", "while", "return",
+            // Shader structure
+            "shader", "vec", "mat"
+        ).sorted()
+    }
+    
+    // Get current word being typed
+    fun getCurrentWord(): String {
+        val cursorPos = textFieldValue.selection.start
+        val textBeforeCursor = textFieldValue.text.substring(0, cursorPos)
+        val lastWordStart = textBeforeCursor.indexOfLast { 
+            it.isWhitespace() || it in "(){}[];,+-*/<>=!&|"
+        } + 1
+        return textBeforeCursor.substring(lastWordStart)
+    }
+    
+    // Update autocomplete suggestions
+    fun updateAutocomplete() {
+        val currentWord = getCurrentWord()
+        if (currentWord.length >= 2) {
+            val filtered = agslKeywords.filter { 
+                it.startsWith(currentWord, ignoreCase = true) && it != currentWord
+            }
+            if (filtered.isNotEmpty()) {
+                autocompleteItems = filtered.take(5)
+                showAutocomplete = true
+                selectedSuggestionIndex = 0
+            } else {
+                showAutocomplete = false
+            }
+        } else {
+            showAutocomplete = false
+        }
+    }
+    
+    // Apply autocomplete
+    fun applyAutocomplete(suggestion: String) {
+        val currentWord = getCurrentWord()
+        val cursorPos = textFieldValue.selection.start
+        val newText = textFieldValue.text.substring(0, cursorPos - currentWord.length) + 
+                      suggestion + 
+                      textFieldValue.text.substring(cursorPos)
+        val newCursorPos = cursorPos - currentWord.length + suggestion.length
+        
+        textFieldValue = TextFieldValue(
+            text = newText,
+            selection = androidx.compose.ui.text.TextRange(newCursorPos)
+        )
+        onCodeChange(newText)
+        showAutocomplete = false
+    }
+    
+    Box(modifier = modifier) {
+        BasicTextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                textFieldValue = newValue
+                onCodeChange(newValue.text)
+                updateAutocomplete()
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .background(Color(0xFF1E1E1E))
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            textStyle = TextStyle(
+                fontFamily = FontFamily.Monospace,
+                fontSize = 13.sp,
+                color = Color(0xFFD4D4D4),
+                lineHeight = 18.sp
+            ),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.None,
+                autoCorrect = false,
+                keyboardType = KeyboardType.Ascii
+            ),
+            decorationBox = { innerTextField ->
+                Box {
+                    if (textFieldValue.text.isEmpty()) {
+                        Text(
+                            "Write your AGSL shader code here...",
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.sp,
+                                color = Color.Gray
+                            )
                         )
-                    )
+                    }
+                    innerTextField()
                 }
-                innerTextField()
+            }
+        )
+        
+        // Autocomplete dropdown
+        if (showAutocomplete && autocompleteItems.isNotEmpty()) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 40.dp, start = 8.dp)
+                    .width(200.dp),
+                shape = RoundedCornerShape(4.dp),
+                color = Color(0xFF2D2D2D),
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp
+            ) {
+                Column(modifier = Modifier.padding(4.dp)) {
+                    autocompleteItems.forEachIndexed { index, item ->
+                        Surface(
+                            onClick = { applyAutocomplete(item) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 1.dp),
+                            shape = RoundedCornerShape(2.dp),
+                            color = if (index == selectedSuggestionIndex) {
+                                Color(0xFF0D47A1).copy(alpha = 0.6f)
+                            } else {
+                                Color.Transparent
+                            }
+                        ) {
+                            Text(
+                                text = item,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                style = TextStyle(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFD4D4D4)
+                                )
+                            )
+                        }
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 @Composable

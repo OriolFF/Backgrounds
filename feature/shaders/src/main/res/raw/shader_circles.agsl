@@ -1,0 +1,16 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    uv = uv * 2.0 - 1.0; // Center coordinates
+    uv.x *= iResolution.x / iResolution.y; // Correct aspect ratio
+    
+    float dist = length(uv);
+    float pattern = sin(dist * 10.0 - iTime * 2.0) * 0.5 + 0.5;
+    
+    float3 color = float3(pattern * 0.8, pattern * 0.4, pattern);
+    
+    return half4(color, 1.0);
+}

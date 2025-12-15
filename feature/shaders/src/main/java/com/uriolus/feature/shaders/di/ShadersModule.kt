@@ -8,5 +8,5 @@ import org.koin.dsl.module
  * Koin module for shader editor feature
  */
 val shadersModule = module {
-    viewModel { ShadersViewModel() }
+    viewModel { ShadersViewModel(context = get()) }
 }

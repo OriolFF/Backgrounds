@@ -1,0 +1,14 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    
+    // Animated gradient
+    float r = 0.5 + 0.5 * sin(iTime + uv.x * 3.0);
+    float g = 0.5 + 0.5 * sin(iTime + uv.y * 3.0 + 2.0);
+    float b = 0.5 + 0.5 * sin(iTime + (uv.x + uv.y) * 3.0 + 4.0);
+    
+    return half4(r, g, b, 1.0);
+}

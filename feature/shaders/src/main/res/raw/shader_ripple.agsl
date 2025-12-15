@@ -1,0 +1,32 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    float2 mouseUV = iMouse / iResolution;
+    
+    // Distance from touch point
+    float dist = length(uv - mouseUV);
+    
+    // Multiple ripples emanating from touch point
+    float ripple1 = sin(dist * 30.0 - iTime * 5.0);
+    float ripple2 = sin(dist * 20.0 - iTime * 3.0 + 1.0);
+    float ripple3 = sin(dist * 15.0 - iTime * 4.0 + 2.0);
+    
+    // Combine ripples and fade with distance
+    float ripple = (ripple1 + ripple2 * 0.5 + ripple3 * 0.3) * exp(-dist * 2.5);
+    
+    // Create colorful ripple effect
+    float r = 0.5 + 0.5 * sin(ripple * 2.0 + iTime);
+    float g = 0.5 + 0.5 * sin(ripple * 2.0 + iTime + 2.0);
+    float b = 0.5 + 0.5 * sin(ripple * 2.0 + iTime + 4.0);
+    
+    // Base color influenced by position
+    float3 baseColor = float3(0.1, 0.2, 0.3);
+    float3 rippleColor = float3(r, g, b) * (0.5 + 0.5 * ripple);
+    
+    float3 color = baseColor + rippleColor;
+    
+    return half4(color, 1.0);
+}

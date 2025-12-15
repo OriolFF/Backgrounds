@@ -1,0 +1,16 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    
+    // Wave effect
+    float wave = sin(uv.x * 10.0 + iTime) * 0.5 + 0.5;
+    wave += sin(uv.y * 10.0 + iTime * 0.7) * 0.5 + 0.5;
+    wave *= 0.5;
+    
+    float3 color = float3(wave * 0.3, wave * 0.6, wave);
+    
+    return half4(color, 1.0);
+}

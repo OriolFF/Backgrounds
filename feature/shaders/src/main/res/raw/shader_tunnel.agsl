@@ -1,0 +1,20 @@
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    uv = uv * 2.0 - 1.0;
+    uv.x *= iResolution.x / iResolution.y;
+    
+    float dist = length(uv);
+    float angle = atan(uv.y, uv.x);
+    
+    float r = 1.0 / dist;
+    float pattern = sin(r * 5.0 - iTime * 2.0) * 0.5 + 0.5;
+    float stripes = sin(angle * 8.0) * 0.5 + 0.5;
+    
+    float3 color = float3(pattern * stripes, pattern * 0.5, pattern);
+    
+    return half4(color, 1.0);
+}

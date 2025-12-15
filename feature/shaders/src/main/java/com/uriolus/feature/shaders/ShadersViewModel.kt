@@ -1,13 +1,29 @@
 package com.uriolus.feature.shaders
 
+import android.content.Context
 import com.uriolus.core.common.mvi.MviViewModel
 
 /**
  * ViewModel for shader editor following MVI pattern
  */
-class ShadersViewModel : MviViewModel<ShadersState, ShadersIntent, ShadersEvent>(
+class ShadersViewModel(
+    private val context: Context
+) : MviViewModel<ShadersState, ShadersIntent, ShadersEvent>(
     initialState = ShadersState()
 ) {
+    
+    private val shaderPresets: List<ShaderPreset> by lazy {
+        ShaderResourceLoader.loadPresets(context)
+    }
+    
+    init {
+        // Load default shader on init
+        val defaultPreset = shaderPresets.firstOrNull()
+        if (defaultPreset != null) {
+            val code = ShaderResourceLoader.loadShaderCode(context, defaultPreset.resourceId)
+            updateState { copy(shaderCode = code) }
+        }
+    }
     
     override fun handleIntent(intent: ShadersIntent) {
         when (intent) {
@@ -16,12 +32,13 @@ class ShadersViewModel : MviViewModel<ShadersState, ShadersIntent, ShadersEvent>
             }
             
             is ShadersIntent.SelectPreset -> {
-                val preset = SHADER_PRESETS.find { it.id == intent.presetId }
+                val preset = shaderPresets.find { it.id == intent.presetId }
                 if (preset != null) {
+                    val code = ShaderResourceLoader.loadShaderCode(context, preset.resourceId)
                     updateState {
                         copy(
                             selectedPresetId = preset.id,
-                            shaderCode = preset.code,
+                            shaderCode = code,
                             compileError = null,
                             showPresets = false
                         )
@@ -49,10 +66,11 @@ class ShadersViewModel : MviViewModel<ShadersState, ShadersIntent, ShadersEvent>
             }
             
             is ShadersIntent.ResetShader -> {
-                val defaultPreset = SHADER_PRESETS.first()
+                val defaultPreset = shaderPresets.first()
+                val code = ShaderResourceLoader.loadShaderCode(context, defaultPreset.resourceId)
                 updateState {
                     copy(
-                        shaderCode = defaultPreset.code,
+                        shaderCode = code,
                         selectedPresetId = defaultPreset.id,
                         compileError = null,
                         customUniforms = emptyMap()
@@ -72,4 +90,7 @@ class ShadersViewModel : MviViewModel<ShadersState, ShadersIntent, ShadersEvent>
     fun updateTouchPosition(x: Float, y: Float) {
         updateState { copy(touchPosition = androidx.compose.ui.geometry.Offset(x, y)) }
     }
+    
+    // Get presets for UI
+    fun getPresets(): List<ShaderPreset> = shaderPresets
 }

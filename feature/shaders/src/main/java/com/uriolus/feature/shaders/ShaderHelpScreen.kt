@@ -88,13 +88,19 @@ private fun UniformsSection() {
         UniformItem(
             name = "iMouse",
             type = "float2", 
-            description = "Touch/mouse position in pixels (x, y). Currently being implemented."
+            description = "Touch/mouse position in pixels (x, y). Updates when screen is touched/dragged. Use for interactive effects."
         )
         
         CodeBlock("""
 // Example usage:
 float2 uv = fragCoord / iResolution;
+float2 mouseUV = iMouse / iResolution;
+
+// Animate with time
 float wave = sin(uv.x * 10.0 + iTime);
+
+// React to touch/mouse position
+float dist = length(uv - mouseUV);
         """.trimIndent())
     }
 }
@@ -149,7 +155,7 @@ private fun ExamplesSection() {
     HelpSection(title = "Example Patterns") {
         
         ExampleItem(
-            title = "Gradient",
+            title = "Animated Gradient",
             code = """
 uniform float2 iResolution;
 uniform float iTime;
@@ -167,35 +173,142 @@ half4 main(float2 fragCoord) {
         )
         
         ExampleItem(
-            title = "Circle",
+            title = "Interactive Circle (iMouse)",
             code = """
 uniform float2 iResolution;
+uniform float2 iMouse;
 
 half4 main(float2 fragCoord) {
     float2 uv = fragCoord / iResolution;
-    uv = uv * 2.0 - 1.0;                    // Center coordinates
-    uv.x *= iResolution.x / iResolution.y;  // Fix aspect ratio
+    float2 mouseUV = iMouse / iResolution;
     
-    float dist = length(uv);
-    float circle = step(dist, 0.5);         // Circle with radius 0.5
+    // Center coordinates
+    uv = uv * 2.0 - 1.0;
+    mouseUV = mouseUV * 2.0 - 1.0;
+    uv.x *= iResolution.x / iResolution.y;
+    mouseUV.x *= iResolution.x / iResolution.y;
     
-    return half4(circle, circle, circle, 1.0);
+    // Distance from mouse position
+    float dist = length(uv - mouseUV);
+    float circle = smoothstep(0.3, 0.28, dist);
+    
+    // Color based on distance
+    float3 color = float3(circle * (1.0 - dist), 
+                          circle * 0.5, 
+                          circle * dist);
+    
+    return half4(color, 1.0);
 }
             """.trimIndent()
         )
         
         ExampleItem(
-            title = "Animated Wave",
+            title = "Touch Ripple Effect",
+            code = """
+uniform float2 iResolution;
+uniform float2 iMouse;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution;
+    float2 mouseUV = iMouse / iResolution;
+    
+    // Distance from touch point
+    float dist = length(uv - mouseUV);
+    
+    // Ripple effect
+    float ripple = sin(dist * 30.0 - iTime * 5.0);
+    ripple *= exp(-dist * 3.0); // Fade with distance
+    
+    float3 color = float3(0.2, 0.5, 0.8) * (0.5 + 0.5 * ripple);
+    
+    return half4(color, 1.0);
+}
+            """.trimIndent()
+        )
+        
+        ExampleItem(
+            title = "Metaballs",
             code = """
 uniform float2 iResolution;
 uniform float iTime;
 
 half4 main(float2 fragCoord) {
     float2 uv = fragCoord / iResolution;
+    uv = uv * 2.0 - 1.0;
+    uv.x *= iResolution.x / iResolution.y;
     
-    float wave = sin(uv.x * 10.0 + iTime * 2.0) * 0.5 + 0.5;
+    // Create multiple moving metaballs
+    float f = 0.0;
+    f += 0.1 / length(uv - float2(sin(iTime) * 0.5, 
+                                  cos(iTime * 0.7) * 0.5));
+    f += 0.1 / length(uv - float2(cos(iTime * 1.3) * 0.5, 
+                                  sin(iTime * 0.9) * 0.5));
+    f += 0.1 / length(uv - float2(sin(iTime * 1.1) * 0.5, 
+                                  cos(iTime * 1.5) * 0.5));
     
-    return half4(wave, wave * 0.5, wave * 0.8, 1.0);
+    float3 color = float3(f * 0.8, f * 0.5, f);
+    
+    return half4(color, 1.0);
+}
+            """.trimIndent()
+        )
+        
+        ExampleItem(
+            title = "Plasma Effect",
+            code = """
+uniform float2 iResolution;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution * 10.0;
+    
+    float v = sin(uv.x + iTime);
+    v += sin(uv.y + iTime);
+    v += sin((uv.x + uv.y) + iTime);
+    v += sin(sqrt(uv.x * uv.x + uv.y * uv.y) + iTime);
+    v *= 0.25;
+    
+    float3 color = float3(
+        0.5 + 0.5 * sin(v * 3.14159),
+        0.5 + 0.5 * sin(v * 3.14159 + 2.0),
+        0.5 + 0.5 * sin(v * 3.14159 + 4.0)
+    );
+    
+    return half4(color, 1.0);
+}
+            """.trimIndent()
+        )
+        
+        ExampleItem(
+            title = "Simple Ray Marching",
+            code = """
+uniform float2 iResolution;
+uniform float iTime;
+
+half4 main(float2 fragCoord) {
+    float2 uv = fragCoord / iResolution * 2.0 - 1.0;
+    uv.x *= iResolution.x / iResolution.y;
+    
+    // Camera ray
+    float3 rayDir = normalize(float3(uv, 1.0));
+    float3 rayPos = float3(0.0, 0.0, -3.0);
+    
+    // Sphere at origin
+    float3 spherePos = float3(0.0, 0.0, 0.0);
+    float t = 0.0;
+    
+    // Simple ray marching loop
+    for(int i = 0; i < 32; i++) {
+        float3 p = rayPos + rayDir * t;
+        float dist = length(p - spherePos) - 1.0;
+        if(dist < 0.01) break;
+        t += dist;
+    }
+    
+    float3 color = float3(1.0 - t * 0.15);
+    
+    return half4(color, 1.0);
 }
             """.trimIndent()
         )
@@ -209,10 +322,14 @@ private fun TipsSection() {
         TipItem("🎯 Center Coordinates", "Use: uv = uv * 2.0 - 1.0 to get -1 to 1 range")
         TipItem("📺 Fix Aspect Ratio", "Multiply x by iResolution.x / iResolution.y")
         TipItem("🌈 Animate Colors", "Use sin(iTime + offset) for smooth color changes")
+        TipItem("👆 Interactive Effects", "Use iMouse for touch-based interactions and cursor following")
+        TipItem("💫 Smooth Falloff", "Use exp(-dist * factor) for natural distance-based fading")
         TipItem("⚡ Performance", "Avoid divisions in loops, precalculate constants")
         TipItem("🔍 Debug", "Output variables as colors: half4(value, value, value, 1.0)")
         TipItem("📏 Distance Fields", "Use length() and distance() for circles and shapes")
         TipItem("🎨 Mix Colors", "Use mix(color1, color2, factor) for blending")
+        TipItem("🔄 Smooth Edges", "Use smoothstep(edge0, edge1, x) instead of step() for anti-aliasing")
+        TipItem("🌊 Wave Patterns", "Combine multiple sin/cos with different frequencies for complex patterns")
     }
 }
 
