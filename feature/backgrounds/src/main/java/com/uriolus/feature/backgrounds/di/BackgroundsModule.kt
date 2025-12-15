@@ -1,7 +1,7 @@
 package com.uriolus.feature.backgrounds.di
 
 import com.uriolus.feature.backgrounds.BackgroundsViewModel
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**

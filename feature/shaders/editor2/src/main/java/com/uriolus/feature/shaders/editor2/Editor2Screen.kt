@@ -103,21 +103,7 @@ fun Editor2Screen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Shader preview info (optional - shows compilation status)
-                if (state.compileError != null) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "⚠ ${state.compileError}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                }
-                
+
                 Spacer(modifier = Modifier.weight(1f))
                 
                 // Collapsible code editor section

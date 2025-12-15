@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -131,7 +132,7 @@ fun ShadersScreen(
                                 Icon(Icons.Default.Info, "Help", tint = Color.White)
                             }
                             IconButton(onClick = { viewModel.handleIntent(ShadersIntent.TogglePresets) }) {
-                                Icon(Icons.Default.List, "Presets", tint = Color.White)
+                                Icon(Icons.AutoMirrored.Filled.List, "Presets", tint = Color.White)
                             }
                             IconButton(onClick = { viewModel.handleIntent(ShadersIntent.ResetShader) }) {
                                 Icon(Icons.Default.Refresh, "Reset", tint = Color.White)
@@ -433,7 +434,7 @@ private fun CodeEditor(
             cursorBrush = SolidColor(Color.White),  // Make cursor visible
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
-                autoCorrect = false,
+                autoCorrectEnabled = false,
                 keyboardType = KeyboardType.Ascii
             ),
             decorationBox = { innerTextField ->

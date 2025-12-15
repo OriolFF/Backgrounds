@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -32,8 +33,20 @@ fun CodeEditorField(
     alpha: Float = 0.85f,
     modifier: Modifier = Modifier
 ) {
-    var textFieldValue by remember(code) {
-        mutableStateOf(TextFieldValue(code))
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(code)) }
+    
+    // Update text field value when code changes externally (not from user input)
+    LaunchedEffect(code) {
+        if (textFieldValue.text != code) {
+            // Code changed externally, update but try to preserve cursor position
+            val currentSelection = textFieldValue.selection
+            val newStart = currentSelection.start.coerceIn(0, code.length)
+            val newEnd = currentSelection.end.coerceIn(0, code.length)
+            textFieldValue = TextFieldValue(
+                text = code,
+                selection = TextRange(newStart, newEnd)
+            )
+        }
     }
     
     val scrollState = rememberScrollState()
@@ -85,7 +98,7 @@ fun CodeEditorField(
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.None,
-                    autoCorrect = false,
+                    autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Ascii
                 )
             )

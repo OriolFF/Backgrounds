@@ -3,9 +3,11 @@ package com.uriolus.feature.shaders.editor2.components
 import android.graphics.RuntimeShader
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ShaderBrush
@@ -47,37 +49,7 @@ fun ShaderPreviewCanvas(
         }
     }
     
-    // Update uniforms
-    LaunchedEffect(currentShader, elapsedTime, touchPosition, canvasSize) {
-        currentShader?.let { shader ->
-            try {
-                // Set iResolution uniform
-                shader.setFloatUniform(
-                    "iResolution",
-                    canvasSize.width,
-                    canvasSize.height
-                )
-                
-                // Set iTime uniform
-                shader.setFloatUniform("iTime", elapsedTime)
-                
-                // Set iMouse uniform if shader uses it
-                try {
-                    shader.setFloatUniform(
-                        "iMouse",
-                        touchPosition.x,
-                        touchPosition.y
-                    )
-                } catch (e: Exception) {
-                    // Shader doesn't have iMouse uniform, ignore
-                }
-            } catch (e: Exception) {
-                // Ignore uniform update errors
-            }
-        }
-    }
-    
-    Canvas(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { size ->
@@ -92,21 +64,50 @@ fun ShaderPreviewCanvas(
                     }
                 )
             }
-    ) {
-        currentShader?.let { shader ->
-            val brush = ShaderBrush(shader)
-            drawRect(
-                brush = brush,
-                size = size
-            )
-        } ?: run {
-            // Draw black background if shader not compiled
-            drawRect(
-                color = androidx.compose.ui.graphics.Color.Black,
-                size = size
-            )
-        }
-    }
+            .drawBehind {
+                currentShader?.let { shader ->
+                    try {
+                        // Set uniforms - this reads elapsedTime/touchPosition state,
+                        // triggering recomposition when they change
+                        shader.setFloatUniform(
+                            "iResolution",
+                            size.width,
+                            size.height
+                        )
+                        
+                        shader.setFloatUniform("iTime", elapsedTime)
+                        
+                        // Set iMouse uniform if shader uses it
+                        try {
+                            shader.setFloatUniform(
+                                "iMouse",
+                                touchPosition.x,
+                                touchPosition.y
+                            )
+                        } catch (e: Exception) {
+                            // Shader doesn't have iMouse uniform, ignore
+                        }
+                        
+                        drawRect(
+                            brush = ShaderBrush(shader),
+                            size = size
+                        )
+                    } catch (e: Exception) {
+                        // Draw black background on error
+                        drawRect(
+                            color = androidx.compose.ui.graphics.Color.Black,
+                            size = size
+                        )
+                    }
+                } ?: run {
+                    // Draw black background if shader not compiled
+                    drawRect(
+                        color = androidx.compose.ui.graphics.Color.Black,
+                        size = size
+                    )
+                }
+            }
+    )
 }
 
 /**
